@@ -1,0 +1,165 @@
+\documentclass{article}
+\usepackage{pig}
+\ColourEpigram
+\usepackage{a4}
+\usepackage{stmaryrd}
+\usepackage{upgreek}
+
+\begin{document}
+\title{Presheaves on Purpose}
+\author{Conor McBride}
+\maketitle
+
+\newcommand{\F}[1]{\green{\mathrm{#1}}}
+\newcommand{\D}[1]{\mathsf{\blue{#1}}}
+\newcommand{\C}[1]{\mathsf{\red{#1}}}
+\newcommand{\V}[1]{\mathit{\purple{#1}}}
+
+\newcommand{\hab}{\,:\,}
+\newcommand{\hb}{\!:\!}
+
+\newcommand{\MU}[2]{\D{\upmu}\:#1\:#2}
+\newcommand{\Desc}{\D{Desc}}
+\newcommand{\EXT}[2]{\F{\llbracket}#1\F{\rrbracket}#2}
+\newcommand{\Type}{\D{Type}}
+\newcommand{\TYPE}{\D{TYPE}}
+\newcommand{\To}{\mathrel{\D{\rightarrow}}}
+\newcommand{\Term}{\D{Term}}
+\newcommand{\Thin}[2]{#1 \mathrel{\D{\sqsubseteq}} #2}
+\newcommand{\One}{\D{1}}
+\newcommand{\QOne}{\C{\mbox{'}1}}
+\newcommand{\PX}{\mathop{\D{\times}}}
+\newcommand{\QPX}{\mathop{\C{\mbox{'}\!\times}}}
+\newcommand{\QSG}{\C{\mbox{'}\Upsigma}}
+\newcommand{\QPI}{\C{\mbox{'}\Uppi}}
+\newcommand{\Enum}[1]{\D{\{}#1\D{\}}}
+\newcommand{\ec}{\D{,}\,}
+\newcommand{\pc}{\C{,}\,}
+
+\newcommand{\thi}{\F{\upiota}}
+\newcommand{\thc}{\mathop{\F{\fatsemi}}}
+\newcommand{\thin}[2]{#1\mathop{\F{\uparrow}}#2}
+
+\newcommand{\vd}{\C{\ast}}
+\newcommand{\su}[1]{#1\C{+\!1}}
+\newcommand{\ze}{\C{0}}
+\newcommand{\no}[1]{#1\C{\Yup}}
+\newcommand{\con}[1]{\C{\langle}#1\C{\rangle}}
+
+\newcommand{\X}{\C{\mbox{'}X}}
+
+\section{Introduction}
+
+Whenever we find ourselves engineering coincidences, something is wrong. If we cannot articulate the design choices whose consequences we propagate, something is wrong. Let me show you something wrong. In Haskell, Agda, Idris, Lean or Coq (to name but a handful), I can write a function (pronounced `thin')
+\[
+\Rule{\V{t}\hab  \Term\:\V{n} \quad \theta\hab\Thin{\V{n}}{\V{m}}}
+{\thin{\V{t}}{\V{\theta}}\hab \Term\:\V{m}}
+\]
+where $\Term\:\V{n}$ is the type of \emph{well scoped} lambda-terms with $\V{n}$ free variables in scope, and $\Thin{\V{n}}{\V{m}}$ is the type of order-preserving injections---\emph{thinnings}---embedding $\V{n}$ free variables into a larger scope with $\V{m}$ free variables\footnote{I like $\V{m}$ to be larger than $\V{n}$. Count the sticks.}. Moreover, I can prove
+\[
+\thin{\V{t}}{\V{\thi}} = \V{t}
+\qquad\qquad
+\thin{\V{t}}{(\V{\theta}\thc\V{\phi})} = \thin{(\thin{\V{t}}{\V{\theta}})}{\V{\phi}}
+\]
+i.e., that $\thin{\cdot}{\cdot}$ respects the identity thinning, $\thi$, and thinning composition, $\thc$. In other words, I extend $\Term$ to a \emph{presheaf} over thinnings (i.e., a functor into $\Type$).  And what is wrong is that \textbf{it is I who does these things}.
+
+Let us take a closer look at the constructors of $\Term\:\cdot$ and the action of $\thin\cdot\cdot$:
+\[\begin{array}{c|c|c}
+\Rule{\V{x}\hab \Thin{\red{1}}{\V{n}}}
+     {\C{var}\:\V{x}\hab \Term\:n}
+&
+\Rule{\V{f},\V{s} \hab \Term\:\V{n}}
+     {\C{app}\:\V{f}\:\V{s}\hab \Term\:\V{n}}    
+&
+\Rule{\V{t} \hab \Term\:(\su{\V{n}})}
+     {\C{lam}\:\V{t}\hab \Term\:\V{n}}
+\\
+\thin{(\C{var}\:\V{x})}{\V{\theta}} = \C{var}\:(\V{x}\thc\V{\theta})&
+\thin{(\C{app}\:\V{f}\:\V{s})}{\V{\theta}} = \C{app}\:(\thin{\V{f}}{\V{\theta}})\:(\thin{\V{s}}{\V{\theta}}) &
+\thin{(\C{lam}\:\V{t})} = \C{lam}\:(\thin{\V{t}}{(\su{\V{\theta}})})
+\end{array}\]
+Note that for $\C{var}$, $\V{\theta}$ acts by \emph{postcomposition}. Moreover, for $\C{lam}$, the postfix $\su{\cdot}$ which happens to $\V{n}$ in the type looks a lot like the $\su{\cdot}$ which happens to $\V{\theta}$ in the function. What is the latter? Thinnings are generated thus:
+\[
+\Axiom{\ze\hab\Thin\ze\ze} \qquad
+\Rule{\V{\theta}\hab\thin{\V{n}}{\V{m}}}
+     {\no{\V{\theta}}\hab\thin{\V{n}}{\su{\V{m}}}} \qquad
+\Rule{\V{\theta}\hab\thin{\V{n}}{\V{m}}}
+     {\su{\V{\theta}}\hab\thin{\su{\V{n}}}{\su{\V{m}}}}
+\]
+which is to say that $\Thin{\V{n}}{\V{m}}$ represents the paths in Pascal's triangle ($\ze$ means `start at the root', $\no{\cdot}$ `down and left', $\su{\cdot}$ `down and right') determining particular choices of $\V{n}$ things from $\V{m}$. The $\su{\cdot}$ action on a thinning coincides with the $\su{\cdot}$ action on source and target scopes. My overloading of the constructors is deliberate emphasis.
+
+Let us define identity and composition for thinnings:
+\[\begin{array}[b]{rcl}
+\thi_\ze & = & \ze \\ \\ \\
+\thi_{(\su{\V{n}})} & = & \su{\thi_{\V{n}}}
+\end{array}
+\qquad\qquad
+\begin{array}[b]{r@{\:\mathop{\thc}\:}lcl}
+  \ze & \ze & = & \ze \\
+  \V{\theta} & (\no{\V{\phi}}) & = & \no{(\V{\theta}\thc\V{\phi})} \\
+  (\no{\V{\theta}}) & (\su{\V{\phi}}) & = & \no{(\V{\theta}\thc\V{\phi})} \\
+  (\su{\V{\theta}}) & (\su{\V{\phi}}) & = & \su{(\V{\theta}\thc\V{\phi})} 
+\end{array}
+\]
+The last line confirms that $\su{\cdot}$ is a \emph{functor}, acting on scopes and thinnings between them in a way which respects identity and composition.
+
+In this paper, let us spot such structure and make presheaves on purpose.
+
+
+\section{Descriptions of Datatypes}
+
+Let me remind you of a technology from early this century which has still not been broadly adopted, despite its considerable potential to move hard work from humans to computers: first class datatype descriptions. We can use data to describe multisorted strictly positive functors
+\[
+\Rule{\V{I}\hab\Type}
+     {\Desc\:\V{I}\hab\TYPE}
+\qquad
+\Rule{\V{F}\hab \Desc\:\V{I}\quad \V{X}\hab\V{I}\To\Type}
+     {\EXT{\V{F}}{\V{X}}\hab\Type}
+\]
+where $\TYPE$ is a bigger universe than $\Type$, with $\Type\hab\TYPE$. We shall then be able to take a least fixpoint of a \emph{family} of descriptions:
+\[
+\Rule{\V{F}\hab \V{I}\To\Desc\:\V{I} \quad \V{i}\hab I}
+     {\MU{\V{F}}{\V{i}} \hab \Type}
+\qquad
+\Rule{\V{ts}\hab \EXT{\V{F}\:\V{i}}{(\MU{\V{F}}{\!})}}
+     {\con{\V{ts}}\hab \MU{\V{F}}{\V{i}}}
+\]
+
+What descriptions shall we have? Certainly, we must have places for data:
+\[
+\Rule{\V{i}\hab\V{I}}
+     {\X\:\V{i}\hab \Desc\:\V{I}}
+\quad
+\EXT{\X\:\V{i}}{\V{X}} = \V{X}\:\V{i}     
+\]
+Let us have tupling structure:
+\[
+\Axiom{\QOne\hab\Desc\:\V{I}}
+\quad
+\EXT{\QOne}{\V{X}} = \One
+\qquad
+\Rule{\V{F},\V{G}\hab\Desc\:\V{I}}
+     {\V{F}\QPX\V{G}\hab\Desc\:\V{I}}
+\quad
+\EXT{\V{F}\QPX\V{G}}{\V{X}} = \EXT{\V{F}}{\V{X}} \PX \EXT{\V{G}}{\V{X}}     
+\]
+Let us also form dependent pairs and functions over arbitrary types---that is why $\Desc\:\V{I}$ is a $\TYPE$, not a $\Type$.
+\[
+\Rule{\V{S}\hab\Type\quad \V{F}\hab \V{S}\To\Desc\:\V{I}}
+     {\QSG\:\V{S}\:\V{F}, \QPI\:\V{S}\:\V{F} \hab \Desc\:\V{I}}
+\quad
+\begin{array}{l}
+  \EXT{\QSG\:\V{S}\:\V{F}}{\V{X}} = (\V{s}\hb\V{S})\PX\EXT{\V{F}\:\V{s}}{\V{X}} \\
+  \EXT{\QPI\:\V{S}\:\V{F}}{\V{X}} = (\V{s}\hb\V{S})\To\EXT{\V{F}\:\V{s}}{\V{X}} \\
+\end{array}
+\]
+
+If we grant ourselves finite enumerations of tags, $\Enum{\C{foo}\ec\C{bar}\ec\C{baz}}$, we can describe typical `sums of products' structures. For example, we may describe the natural numbers, indexed over $\One$ (with sole element $\vd$):
+\[
+\F{Nat} = \MU{(\vd \mapsto \QSG\:\Enum{\C{ze}\ec\C{su}}\:(\C{ze}\mapsto\QOne;\C{su}\mapsto\X\:\vd))}{\vd}
+\qquad
+\ze = \con{\C{ze}\pc\vd}
+\quad
+\su{\V{n}} = \con{\C{su}\pc\V{n}}
+\]
+\end{document}
