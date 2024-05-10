@@ -76,7 +76,7 @@ Let us take a closer look at the constructors of $\Term\:\cdot$ and the action o
 \\
 \thin{(\C{var}\:\V{x})}{\V{\theta}} = \C{var}\:(\V{x}\thc\V{\theta})&
 \thin{(\C{app}\:\V{f}\:\V{s})}{\V{\theta}} = \C{app}\:(\thin{\V{f}}{\V{\theta}})\:(\thin{\V{s}}{\V{\theta}}) &
-\thin{(\C{lam}\:\V{t})} = \C{lam}\:(\thin{\V{t}}{(\su{\V{\theta}})})
+\thin{(\C{lam}\:\V{t})}{\V{\theta}} = \C{lam}\:(\thin{\V{t}}{(\su{\V{\theta}})})
 \end{array}\]
 Note that for $\C{var}$, $\V{\theta}$ acts by \emph{postcomposition}. Moreover, for $\C{lam}$, the postfix $\su{\cdot}$ which happens to $\V{n}$ in the type looks a lot like the $\su{\cdot}$ which happens to $\V{\theta}$ in the function. What is the latter? Thinnings are generated thus:
 \[
